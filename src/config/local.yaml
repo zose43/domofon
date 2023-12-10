@@ -1,0 +1,6 @@
+env: "local" #dev,prod
+storage_path: "./storage/domofon.db"
+token_ttl: 1h
+grpc:
+  port: 4444
+  timeout: 1h
