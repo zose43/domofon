@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"domofon/internal/domain/models"
+	"domofon/internal/lib/jwt"
 	"domofon/internal/storage"
 	"errors"
 	"fmt"
@@ -52,6 +53,7 @@ func NewAuth(
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrInvalidApp         = errors.New("invalid application")
+	ErrUserExists         = errors.New("user already exists")
 )
 
 func (a *Auth) Login(ctx context.Context, pass string, email string, appID int) (string, error) {
@@ -80,7 +82,22 @@ func (a *Auth) Login(ctx context.Context, pass string, email string, appID int) 
 		log.Error("invalid password", err)
 		return "", fmt.Errorf("%s %w", op, ErrInvalidCredentials)
 	}
-	// todo handle app
+
+	app, err := a.appProvider.App(ctx, int32(appID))
+	if err != nil {
+		if errors.Is(err, storage.ErrAppNotFound) {
+			log.Error("app not found")
+			return "", fmt.Errorf("%s %s", op, ErrInvalidApp)
+		}
+	}
+
+	token, err := jwt.NewToken(user, app, a.tokenTTL)
+	if err != nil {
+		log.Error("failed generating token", err)
+		return "", fmt.Errorf("%s %w", op, err)
+	}
+
+	return token, nil
 }
 
 func (a *Auth) Register(ctx context.Context, pass string, email string) (int64, error) {
@@ -101,13 +118,34 @@ func (a *Auth) Register(ctx context.Context, pass string, email string) (int64, 
 
 	id, err := a.userSaver.SaveUser(ctx, email, hash)
 	if err != nil {
-		log.Error("failed saving new user", err)
-		return 0, fmt.Errorf("%s %w", op, err)
+		if errors.Is(err, storage.ErrUserExists) {
+			log.Error("failed saving new user", err)
+			return 0, fmt.Errorf("%s %w", op, ErrUserExists)
+		}
 	}
 
 	return id, nil
 }
 
 func (a *Auth) IsAdmin(ctx context.Context, userID int) (bool, error) {
-	panic("not implemented")
+	const op = "auth.isAdmin"
+
+	log := a.log.With(
+		slog.String("op", op),
+		slog.Int("user_id", userID),
+	)
+
+	result, err := a.userProvider.IsAdmin(ctx, int64(userID))
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			log.Warn("failed execute isAdmin", err)
+			return result, fmt.Errorf("%s %w", op, ErrInvalidCredentials)
+		}
+		if errors.Is(err, storage.ErrAppNotFound) {
+			log.Warn("failed execute isAdmin", err)
+			return result, fmt.Errorf("%s %w", op, ErrInvalidApp)
+		}
+	}
+
+	return result, nil
 }
