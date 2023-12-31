@@ -134,7 +134,7 @@ func (a *Auth) IsAdmin(ctx context.Context, userID int) (bool, error) {
 		slog.String("op", op),
 		slog.Int("user_id", userID),
 	)
-
+	//todo add app
 	result, err := a.userProvider.IsAdmin(ctx, int64(userID))
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {

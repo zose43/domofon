@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"domofon/internal/services/auth"
+	"errors"
 	domofon_v1 "github.com/zose43/domofon-proto/out/go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -42,7 +44,14 @@ func (h handler) Login(
 		int(request.GetAppId()),
 	)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			return nil, status.Error(codes.InvalidArgument, "invalid credentials")
+		}
+		if errors.Is(err, auth.ErrInvalidApp) {
+			return nil, status.Error(codes.NotFound, "app not found")
+		}
+
+		return nil, status.Error(codes.Internal, "internal error")
 	}
 
 	return &domofon_v1.LoginResponse{Token: token}, nil
@@ -72,7 +81,11 @@ func (h handler) IsAdmin(
 
 	res, err := h.auth.IsAdmin(ctx, int(request.GetUserId()))
 	if err != nil {
-		return nil, err
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
+		// todo app add
+		return nil, status.Error(codes.Internal, "internal error")
 	}
 
 	return &domofon_v1.IsAdminResponse{IsAdmin: res}, nil
@@ -96,7 +109,11 @@ func (h handler) Register(
 
 	userID, err := h.auth.Register(ctx, request.GetPassword(), request.GetEmail())
 	if err != nil {
-		return nil, err
+		if errors.Is(err, auth.ErrUserExists) {
+			return nil, status.Error(codes.AlreadyExists, "user already exists")
+		}
+
+		return nil, status.Error(codes.Internal, "internal error")
 	}
 
 	return &domofon_v1.RegisterResponse{Id: userID}, nil
