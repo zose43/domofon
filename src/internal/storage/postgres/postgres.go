@@ -8,7 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type Storage struct {
@@ -22,7 +23,7 @@ const (
 func NewStorage(dsn string) (*Storage, error) {
 	const op = "storage.postgres.new"
 
-	db, err := sql.Open("postgres", dsn)
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("%s %w", op, err)
 	}
