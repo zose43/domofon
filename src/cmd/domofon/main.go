@@ -23,7 +23,7 @@ func main() {
 
 	application := app.New(
 		log,
-		cfg.StoragePath,
+		cfg.StorageUrl,
 		cfg.GrpcSrv.Port,
 		cfg.TokenTTL,
 	)

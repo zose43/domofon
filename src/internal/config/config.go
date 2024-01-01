@@ -8,10 +8,10 @@ import (
 )
 
 type Config struct {
-	Env         string        `yaml:"env" env-default:"local"`
-	StoragePath string        `yaml:"storage_path"`
-	TokenTTL    time.Duration `yaml:"token_ttl" env-required:"true"`
-	GrpcSrv     GrpcConfig    `yaml:"grpc"`
+	Env        string        `yaml:"env" env-default:"local"`
+	StorageUrl string        `yaml:"storage_url"`
+	TokenTTL   time.Duration `yaml:"token_ttl" env-required:"true"`
+	GrpcSrv    GrpcConfig    `yaml:"grpc"`
 }
 
 func MustLoad() *Config {

@@ -14,6 +14,17 @@ type App struct {
 	port    int
 }
 
+func New(
+	log *slog.Logger,
+	port int,
+	authService auth.Auth,
+) *App {
+	grpcSrv := grpc.NewServer()
+	auth.Register(grpcSrv, authService)
+
+	return &App{log: log, port: port, grpcSrv: grpcSrv}
+}
+
 func (a *App) Run() error {
 	const op = "grpcapp.Run"
 
@@ -45,12 +56,4 @@ func (a *App) MustRun() {
 	if err := a.Run(); err != nil {
 		panic(err)
 	}
-}
-
-func New(log *slog.Logger, port int) *App {
-	grpcSrv := grpc.NewServer()
-	// todo auth service implement
-	auth.Register(grpcSrv)
-
-	return &App{log: log, port: port, grpcSrv: grpcSrv}
 }

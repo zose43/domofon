@@ -2,6 +2,8 @@ package app
 
 import (
 	grpcapp "domofon/internal/app/grpc"
+	"domofon/internal/services/auth"
+	"domofon/internal/storage/postgres"
 	"log/slog"
 	"time"
 )
@@ -12,9 +14,20 @@ type App struct {
 
 func New(
 	log *slog.Logger,
-	storagePath string,
+	storageUrl string,
 	port int,
 	tokenTTL time.Duration,
 ) *App {
-	return &App{GrpcSrv: grpcapp.New(log, port)}
+	storage, err := postgres.NewStorage(storageUrl)
+	if err != nil {
+		panic(err)
+	}
+
+	authService := auth.NewAuth(log, storage, storage, storage, tokenTTL)
+
+	return &App{GrpcSrv: grpcapp.New(
+		log,
+		port,
+		authService,
+	)}
 }
