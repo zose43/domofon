@@ -44,14 +44,7 @@ func (h handler) Login(
 		int(request.GetAppId()),
 	)
 	if err != nil {
-		if errors.Is(err, auth.ErrInvalidCredentials) {
-			return nil, status.Error(codes.InvalidArgument, "invalid credentials")
-		}
-		if errors.Is(err, auth.ErrInvalidApp) {
-			return nil, status.Error(codes.NotFound, "app not found")
-		}
-
-		return nil, status.Error(codes.Internal, "internal error")
+		return nil, printError(err)
 	}
 
 	return &domofon_v1.LoginResponse{Token: token}, nil
@@ -81,11 +74,7 @@ func (h handler) IsAdmin(
 
 	res, err := h.auth.IsAdmin(ctx, int(request.GetUserId()))
 	if err != nil {
-		if errors.Is(err, auth.ErrInvalidCredentials) {
-			return nil, status.Error(codes.NotFound, "user not found")
-		}
-		// todo app add
-		return nil, status.Error(codes.Internal, "internal error")
+		return nil, printError(err)
 	}
 
 	return &domofon_v1.IsAdminResponse{IsAdmin: res}, nil
@@ -109,11 +98,7 @@ func (h handler) Register(
 
 	userID, err := h.auth.Register(ctx, request.GetPassword(), request.GetEmail())
 	if err != nil {
-		if errors.Is(err, auth.ErrUserExists) {
-			return nil, status.Error(codes.AlreadyExists, "user already exists")
-		}
-
-		return nil, status.Error(codes.Internal, "internal error")
+		return nil, printError(err)
 	}
 
 	return &domofon_v1.RegisterResponse{Id: userID}, nil
@@ -128,4 +113,23 @@ func validateRegister(request *domofon_v1.RegisterRequest) error {
 	}
 
 	return nil
+}
+
+func printError(err error) error {
+	var res error
+
+	switch {
+	case errors.Is(err, auth.ErrUserExists):
+		res = status.Error(codes.AlreadyExists, "user already exists")
+	case errors.Is(err, auth.ErrInvalidCredentials):
+		res = status.Error(codes.NotFound, "user not found")
+	case errors.Is(err, auth.ErrInvalidCredentials):
+		res = status.Error(codes.InvalidArgument, "invalid credentials")
+	case errors.Is(err, auth.ErrInvalidApp):
+		res = status.Error(codes.NotFound, "app not found")
+	default:
+		res = status.Error(codes.Internal, "internal error")
+	}
+
+	return res
 }
