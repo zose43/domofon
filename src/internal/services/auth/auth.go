@@ -72,10 +72,6 @@ func (a *Auth) Login(ctx context.Context, pass string, email string, appID int) 
 			log.Warn("user not found", err)
 			return "", fmt.Errorf("%s %w", op, ErrInvalidCredentials)
 		}
-		if errors.Is(err, storage.ErrAppNotFound) {
-			log.Warn("app not found", err)
-			return "", fmt.Errorf("%s %w", op, ErrInvalidApp)
-		}
 		log.Error("failed getting user by email", err)
 	}
 
