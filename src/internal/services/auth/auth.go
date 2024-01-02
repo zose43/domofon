@@ -54,6 +54,7 @@ var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrInvalidApp         = errors.New("invalid application")
 	ErrUserExists         = errors.New("user already exists")
+	ErrUserNotFound       = errors.New("user not found")
 )
 
 func (a *Auth) Login(ctx context.Context, pass string, email string, appID int) (string, error) {
@@ -144,7 +145,7 @@ func (a *Auth) IsAdmin(ctx context.Context, userID int) (bool, error) {
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			log.Error("user not found")
-			return result, fmt.Errorf("%s %w", op, ErrInvalidCredentials)
+			return result, fmt.Errorf("%s %w", op, ErrUserNotFound)
 		}
 
 		log.Error("failed check admin status", err)

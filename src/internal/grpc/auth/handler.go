@@ -125,6 +125,8 @@ func printError(err error) error {
 		res = status.Error(codes.NotFound, "user not found")
 	case errors.Is(err, auth.ErrInvalidApp):
 		res = status.Error(codes.NotFound, "app not found")
+	case errors.Is(err, auth.ErrUserNotFound):
+		res = status.Error(codes.NotFound, "user not found")
 	default:
 		res = status.Error(codes.Internal, "internal error")
 	}
