@@ -7,8 +7,8 @@ import (
 	"domofon/internal/storage"
 	"errors"
 	"fmt"
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -65,7 +65,7 @@ func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
 	var user models.User
 	err = result.Scan(&user.Id, &user.Email, &user.PassHash, &user.IsAdmin)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return models.User{}, fmt.Errorf("%s %w", op, storage.ErrNotFound)
 		}
 
@@ -109,7 +109,7 @@ func (s *Storage) App(ctx context.Context, appID int32) (models.App, error) {
 
 	var app models.App
 	if err = result.Scan(&app.Id, &app.Name, &app.Secret); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return app, fmt.Errorf("%s %w", op, storage.ErrAppNotFound)
 		}
 

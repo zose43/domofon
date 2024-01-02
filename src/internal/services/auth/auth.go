@@ -72,7 +72,9 @@ func (a *Auth) Login(ctx context.Context, pass string, email string, appID int) 
 			log.Warn("user not found", err)
 			return "", fmt.Errorf("%s %w", op, ErrInvalidCredentials)
 		}
+
 		log.Error("failed getting user by email", err)
+		return "", fmt.Errorf("%s %w", op, err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword(user.PassHash, []byte(pass)); err != nil {
@@ -84,9 +86,11 @@ func (a *Auth) Login(ctx context.Context, pass string, email string, appID int) 
 	if err != nil {
 		if errors.Is(err, storage.ErrAppNotFound) {
 			log.Error("app not found")
-			return "", fmt.Errorf("%s %s", op, ErrInvalidApp)
+			return "", fmt.Errorf("%s %w", op, ErrInvalidApp)
 		}
+
 		log.Error("failed getting app by app_id", err)
+		return "", fmt.Errorf("%s %w", op, err)
 	}
 
 	token, err := jwt.NewToken(user, app, a.tokenTTL)
@@ -120,7 +124,9 @@ func (a *Auth) Register(ctx context.Context, pass string, email string) (int64, 
 			log.Error("user already exists")
 			return 0, fmt.Errorf("%s %w", op, ErrUserExists)
 		}
+
 		log.Error("failed saving new user", err)
+		return 0, fmt.Errorf("%s %w", op, err)
 	}
 
 	return id, nil
@@ -140,7 +146,9 @@ func (a *Auth) IsAdmin(ctx context.Context, userID int) (bool, error) {
 			log.Error("user not found")
 			return result, fmt.Errorf("%s %w", op, ErrInvalidCredentials)
 		}
-		log.Error("failed check admin status")
+
+		log.Error("failed check admin status", err)
+		return result, fmt.Errorf("%s %w", op, err)
 	}
 
 	return result, nil

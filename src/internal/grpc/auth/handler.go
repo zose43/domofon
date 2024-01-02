@@ -123,8 +123,6 @@ func printError(err error) error {
 		res = status.Error(codes.AlreadyExists, "user already exists")
 	case errors.Is(err, auth.ErrInvalidCredentials):
 		res = status.Error(codes.NotFound, "user not found")
-	case errors.Is(err, auth.ErrInvalidCredentials):
-		res = status.Error(codes.InvalidArgument, "invalid credentials")
 	case errors.Is(err, auth.ErrInvalidApp):
 		res = status.Error(codes.NotFound, "app not found")
 	default:

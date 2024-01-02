@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"domofon/internal/services/auth"
 	"domofon/tests/suite"
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/golang-jwt/jwt/v5"
@@ -65,8 +64,9 @@ func TestRegister_alreadyUserExist(t *testing.T) {
 	assert.NotEmpty(t, respRegister.GetId())
 
 	respRegister, err = register(ctx, st, email, pass)
-	assert.Error(t, auth.ErrUserExists)
+	assert.Error(t, err)
 	assert.Empty(t, respRegister.GetId())
+	assert.ErrorContains(t, err, "user already exists")
 }
 
 func TestLogin_invalidCredentials(t *testing.T) {
@@ -80,12 +80,14 @@ func TestLogin_invalidCredentials(t *testing.T) {
 	assert.NotEmpty(t, respRegister.GetId())
 
 	respLogin, err := login(ctx, st, gofakeit.Email(), pass)
-	assert.Error(t, auth.ErrInvalidCredentials, "email changed")
+	assert.Error(t, err, "email changed")
 	assert.Empty(t, respLogin.GetToken())
+	assert.ErrorContains(t, err, "user not found")
 
 	respLogin, err = login(ctx, st, email, randomFakePassport())
-	assert.Error(t, auth.ErrInvalidCredentials, "pass changed")
+	assert.Error(t, err, "pass changed")
 	assert.Empty(t, respLogin.GetToken())
+	assert.ErrorContains(t, err, "user not found")
 }
 
 func TestLogin_invalidApp(t *testing.T) {
@@ -101,10 +103,11 @@ func TestLogin_invalidApp(t *testing.T) {
 	respLogin, err := st.AuthClient.Login(ctx, &domofon_v1.LoginRequest{
 		Email:    email,
 		Password: pass,
-		AppId:    emptyAppId,
+		AppId:    4,
 	})
-	assert.Error(t, auth.ErrInvalidApp)
+	assert.Error(t, err)
 	assert.Empty(t, respLogin.GetToken())
+	assert.ErrorContains(t, err, "app not found")
 }
 
 func login(ctx context.Context,
