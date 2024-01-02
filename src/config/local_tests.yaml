@@ -1,0 +1,6 @@
+env: "local" #dev,prod
+storage_url: "postgres://domofon:domofon@localhost:5422/domofon_test?sslmode=disable"
+token_ttl: 1h
+grpc:
+  port: 4444
+  timeout: 1h
