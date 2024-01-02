@@ -34,13 +34,13 @@ func NewStorage(dsn string) (*Storage, error) {
 func (s *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (int64, error) {
 	const op = "storage.postgres.saveUser"
 
-	stmt, err := s.db.Prepare("insert into users (email, pass_hash) VALUES (?,?)")
+	stmt, err := s.db.Prepare("insert into users (email, pass_hash) VALUES ($1,$2) RETURNING id")
 	if err != nil {
 		return 0, fmt.Errorf("%s %w", op, err)
 	}
 
-	result, err := stmt.ExecContext(ctx, email, passHash)
-	if err != nil {
+	var id int64
+	if err = stmt.QueryRowContext(ctx, email, passHash).Scan(&id); err != nil {
 		var postgresErr *pgconn.PgError
 		if errors.As(err, &postgresErr) && postgresErr.Code == UniqueViolationErr {
 			return 0, fmt.Errorf("%s %w", op, storage.ErrUserExists)
@@ -49,17 +49,13 @@ func (s *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (
 		return 0, fmt.Errorf("%s %w", op, err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("%s %w", op, err)
-	}
 	return id, nil
 }
 
 func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
 	const op = "storage.postgres.user"
 
-	stmt, err := s.db.Prepare("select * from users where email = ?")
+	stmt, err := s.db.Prepare("select * from users where email = $1")
 	if err != nil {
 		return models.User{}, fmt.Errorf("%s %w", op, err)
 	}
@@ -67,7 +63,7 @@ func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
 	result := stmt.QueryRowContext(ctx, email)
 
 	var user models.User
-	err = result.Scan(&user.Id, &user.Email, &user.PassHash)
+	err = result.Scan(&user.Id, &user.Email, &user.PassHash, &user.IsAdmin)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return models.User{}, fmt.Errorf("%s %w", op, storage.ErrNotFound)
@@ -82,7 +78,7 @@ func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
 func (s *Storage) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 	const op = "storage.postgres.isAdmin"
 
-	stmt, err := s.db.Prepare("select users.is_admin from users where id = ?")
+	stmt, err := s.db.Prepare("select users.is_admin from users where id = $1")
 	if err != nil {
 		return false, fmt.Errorf("%s %w", op, err)
 	}
@@ -104,7 +100,7 @@ func (s *Storage) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 func (s *Storage) App(ctx context.Context, appID int32) (models.App, error) {
 	const op = "storage.postgres.app"
 
-	stmt, err := s.db.Prepare("select * from apps where id = ?")
+	stmt, err := s.db.Prepare("select * from apps where id = $1")
 	if err != nil {
 		return models.App{}, fmt.Errorf("%s %w", op, err)
 	}
