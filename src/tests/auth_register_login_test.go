@@ -110,6 +110,97 @@ func TestLogin_invalidApp(t *testing.T) {
 	assert.ErrorContains(t, err, "app not found")
 }
 
+func TestRegister_validationErrors(t *testing.T) {
+	tests := []struct {
+		name        string
+		email       string
+		password    string
+		expectedErr string
+	}{
+		{
+			name:        "Register with empty email",
+			email:       "",
+			password:    randomFakePassport(),
+			expectedErr: "empty email",
+		},
+		{
+			name:        "Register with empty password",
+			email:       gofakeit.Email(),
+			password:    "",
+			expectedErr: "empty password",
+		},
+		{
+			name:        "Register with both empty",
+			email:       "",
+			password:    "",
+			expectedErr: "empty email",
+		},
+	}
+
+	ctx, st := suite.NewSuite(t)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := st.AuthClient.Register(ctx, &domofon_v1.RegisterRequest{
+				Email:    tt.email,
+				Password: tt.password,
+			})
+			assert.Error(t, err)
+			assert.ErrorContains(t, err, tt.expectedErr)
+		})
+	}
+}
+
+func TestLogin_validationErrors(t *testing.T) {
+	tests := []struct {
+		name        string
+		email       string
+		password    string
+		appId       int32
+		expectedErr string
+	}{
+		{
+			name:        "Login with empty email",
+			email:       "",
+			password:    randomFakePassport(),
+			appId:       AppId,
+			expectedErr: "empty email",
+		},
+		{
+			name:        "Login with empty password",
+			email:       gofakeit.Email(),
+			password:    "",
+			appId:       AppId,
+			expectedErr: "empty password",
+		},
+		{
+			name:        "Login with empty app_id",
+			email:       gofakeit.Email(),
+			password:    gofakeit.Email(),
+			appId:       emptyAppId,
+			expectedErr: "empty app_id",
+		},
+		{
+			name:        "Login with empty fields",
+			expectedErr: "empty email",
+		},
+	}
+
+	ctx, st := suite.NewSuite(t)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := st.AuthClient.Login(ctx, &domofon_v1.LoginRequest{
+				Email:    tt.email,
+				Password: tt.password,
+				AppId:    tt.appId,
+			})
+			assert.Error(t, err)
+			assert.ErrorContains(t, err, tt.expectedErr)
+		})
+	}
+}
+
 func login(ctx context.Context,
 	st *suite.Suite,
 	email string,
