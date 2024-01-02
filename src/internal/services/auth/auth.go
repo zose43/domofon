@@ -76,6 +76,7 @@ func (a *Auth) Login(ctx context.Context, pass string, email string, appID int) 
 			log.Warn("app not found", err)
 			return "", fmt.Errorf("%s %w", op, ErrInvalidApp)
 		}
+		log.Error("failed getting user by email", err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword(user.PassHash, []byte(pass)); err != nil {
@@ -89,6 +90,7 @@ func (a *Auth) Login(ctx context.Context, pass string, email string, appID int) 
 			log.Error("app not found")
 			return "", fmt.Errorf("%s %s", op, ErrInvalidApp)
 		}
+		log.Error("failed getting app by app_id", err)
 	}
 
 	token, err := jwt.NewToken(user, app, a.tokenTTL)
@@ -119,9 +121,10 @@ func (a *Auth) Register(ctx context.Context, pass string, email string) (int64, 
 	id, err := a.userSaver.SaveUser(ctx, email, hash)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserExists) {
-			log.Error("failed saving new user", err)
+			log.Error("user already exists")
 			return 0, fmt.Errorf("%s %w", op, ErrUserExists)
 		}
+		log.Error("failed saving new user", err)
 	}
 
 	return id, nil
@@ -134,17 +137,14 @@ func (a *Auth) IsAdmin(ctx context.Context, userID int) (bool, error) {
 		slog.String("op", op),
 		slog.Int("user_id", userID),
 	)
-	//todo add app
+
 	result, err := a.userProvider.IsAdmin(ctx, int64(userID))
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
-			log.Warn("failed execute isAdmin", err)
+			log.Error("user not found")
 			return result, fmt.Errorf("%s %w", op, ErrInvalidCredentials)
 		}
-		if errors.Is(err, storage.ErrAppNotFound) {
-			log.Warn("failed execute isAdmin", err)
-			return result, fmt.Errorf("%s %w", op, ErrInvalidApp)
-		}
+		log.Error("failed check admin status")
 	}
 
 	return result, nil
